@@ -103,4 +103,3 @@
     Maintainer: Claude AI (adapted by repository owner)
     Version: 1.1 — improved script catalog and usage notes
     ```
-Idő -->
