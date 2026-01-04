@@ -1,193 +1,106 @@
-# 🚀 Bitburner Batch Farming System
+# 🚀 Bitburner Batch Farming Toolkit
 
-Egy erőteljes, optimalizált HWGW batch farming rendszer a Bitburner játékhoz.
+    This repository contains a collection of scripts and helpers for running HWGW-style batch farms, managing servers, and experimenting with stock/XP automation in Bitburner.
 
-## 📁 Fájlstruktúra
+    ## Quick overview
 
-```
-/
-├── startup.js           # Mindent elindít egyszerre
-├── batch-manager.js     # Fő vezérlő script
-├── analyze-targets.js   # Célpont elemző
-├── auto-root.js         # Automatikus rootolás
-├── server-buyer.js      # Szerver vásárló/upgradelő
-└── batch/
-    ├── hack.js          # Hack worker
-    ├── grow.js          # Grow worker
-    └── weaken.js        # Weaken worker
-```
+    Top-level scripts and their purposes:
 
-## 🎮 Gyors Indítás
+    ```
+    analyze-targets.js    - Scan servers and rank targets by profitability
+    auto-root.js          - Attempt to root all reachable servers (with optional continuous mode)
+    batch-manager.js      - Main HWGW batch orchestrator (prep + schedule batches)
+    startup.js            - Convenience script to start the whole system
+    server-buyer.js       - Buy/upgrade player servers automatically
+    purchaseServer.js     - Helper: purchase a single server (used by server-buyer)
+    multi-launcher.js     - Helper to launch many worker scripts across servers
+    proto-batcher.js      - Alternative/simpler batcher for testing
+    analyze-targets.js    - Target analytics and reporting
+    batch/                - Worker scripts run by the batch manager
+        ├─ hack.js           - Worker that performs hack() on target
+        ├─ grow.js           - Worker that performs grow() on target
+        └─ weaken.js         - Worker that performs weaken() on target
 
-### Legegyszerűbb módszer:
-```
-run startup.js
-```
+    bb-*                  - Experimental BB (batch/bot) variants
+    stock-trader.js       - Minimal stock forecast lister (diagnostic)
+    stockTrader.js        - Full-featured stock trading bot (4S-aware)
+    stock-vs.js           - 4S-optimized stock trader (long-only)
+    targetStats.js        - Utilities to gather and persist target stats
+    timeToLevel.js        - Estimate time to reach hacking level thresholds
+    xpfarm-deploy.js      - Deploy XP-farming workers across servers
+    xpfarm-worker.js      - Single XP-farm worker script
+    xpFleet.js            - Manage a fleet of XP workers
+    bn4-root.js           - 4S / BitNode helper for advanced rooting (experimental)
+    buy-nfg.js            - Buy NFG (Netscript functions) or related items (helper)
+    cct-solver.js         - Crack-Coder-Tool solver helper (utilities)
+    shareLoop.js          - Simple share() loop helper for faction rep
+    README.md             - This file
+    ```
 
-Ez automatikusan:
-1. Rootol minden elérhető szervert
-2. Elemzi és kiválasztja a legjobb célpontot
-3. Elindítja a szerver vásárlót
-4. Elindítja a batch farmert
+    ## Quick start
 
-### Specifikus célpont:
-```
-run startup.js n00dles
-```
+    Run the all-in-one startup (recommended):
 
-## 📖 Részletes Használat
+    ```text
+    run startup.js
+    ```
 
-### Batch Manager
-```
-run batch-manager.js [target] [--auto] [--prep]
-```
+    Start a single batch manager for a specific target:
 
-Opciók:
-- `target`: Konkrét célpont megadása (pl. `foodnstuff`)
-- `--auto`: Automatikus legjobb célpont kiválasztás
-- `--prep`: Szerver előkészítése (alapértelmezetten be van kapcsolva)
+    ```text
+    run batch-manager.js foodnstuff
+    ```
 
-Példák:
-```
-run batch-manager.js --auto          # Automatikus célpont
-run batch-manager.js joesguns        # Specifikus célpont
-run batch-manager.js n00dles --prep  # Előkészítéssel
-```
+    Or let it auto-select the best target:
 
-### Target Analyzer
-```
-run analyze-targets.js [--detailed] [--top N]
-```
+    ```text
+    run batch-manager.js --auto
+    ```
 
-Elemzi az összes szervert és rangsorolja őket profitabilitás szerint.
+    ## Scripts: Short descriptions & usage
 
-Opciók:
-- `--detailed`: Részletes információk
-- `--top N`: Top N célpont megjelenítése (alapértelmezett: 15)
+    - analyze-targets.js: Scans servers and prints a ranked list. Useful flags: `--detailed`, `--top N`.
+    - auto-root.js: Tries to gain root on servers using available exploits. Flags: `--continuous`, `--interval N`.
+    - batch-manager.js: The main batch orchestration script (prep, schedule, monitor). Options: `target`, `--auto`, `--prep`, `--quiet`.
+    - startup.js: Starts auto-root, server buyer, and batch-manager(s) as a convenience wrapper.
+    - server-buyer.js / purchaseServer.js: Buy and upgrade purchased servers automatically. Flags: `--ram N`, `--max N`, `--upgrade`, `--continuous`.
+    - multi-launcher.js: Distribute worker scripts to many purchased/owned servers.
+    - proto-batcher.js: Simpler prototype batcher for testing timing and scheduling logic.
+    - batch/hack.js, batch/grow.js, batch/weaken.js: Worker scripts invoked by `batch-manager.js` to perform HWGW cycles.
+    - bb-* scripts: Alternate/beta batch manager and worker variants (keep separate for testing).
+    - stock-trader.js: Small diagnostic script that lists stock symbols and their forecasts.
+    - stockTrader.js: Robust stock trading bot with compatibility for older/newer Bitburner APIs and 4S checks.
+    - stock-vs.js: A 4S-optimized long-only trader (uses 4S market data, respects volatility and position caps).
+    - targetStats.js: Collects and reports per-target metrics used by the batch manager.
+    - timeToLevel.js: Estimate hours/minutes to next hacking level based on current XP gains.
+    - xpfarm-deploy.js / xpfarm-worker.js / xpFleet.js: Helpers to deploy and manage XP farming workers across servers.
+    - bn4-root.js, buy-nfg.js, cct-solver.js, shareLoop.js: Utility scripts for niche tasks (rooting, purchases, CCT solving, share loop).
 
-### Auto-Root
-```
-run auto-root.js [--continuous] [--interval N]
-```
+    ## Configuration
 
-Automatikusan rootol minden elérhető szervert.
+    Most tuning parameters live at the top of `batch-manager.js` (or `CONFIG` in that file). Common knobs:
 
-Opciók:
-- `--continuous`: Folyamatosan fut és ellenőrzi az új szervereket
-- `--interval N`: Ellenőrzési intervallum ms-ban (alapértelmezett: 60000)
+    - `batchDelay` / `cycleDelay` — timing between operations and batches
+    - `hackPercent` — fraction of server money to hack per batch
+    - `maxPositions` / `minTradeValue` — in stock traders, control risk and trade size
 
-### Server Buyer
-```
-run server-buyer.js [--ram N] [--max N] [--upgrade]
-```
+    Adjust conservatively and test on small targets before scaling.
 
-Automatikusan vásárol és frissít szervereket.
+    ## Troubleshooting
 
-Opciók:
-- `--ram N`: Kezdő RAM méret (0 = automatikus)
-- `--max N`: Maximum szerverek száma (alapértelmezett: 25)
-- `--upgrade`: Automatikus upgrade (alapértelmezetten be van kapcsolva)
-- `--continuous`: Folyamatos futás
+    - If scripts crash with API errors, your Bitburner version may use older/newer stock APIs — check `stockTrader.js` and `stock-vs.js` for compatibility wrappers (`buyStock`/`buy`).
+    - Make sure you have 4S Market Data before running 4S-optimized stock scripts (`stock-vs.js`, `stockTrader.js`).
+    - Use `tail <script>` to inspect logs and `kill <script>` / `killall` to stop scripts when experimenting.
 
-## ⚙️ Konfiguráció
+    ## Tips
 
-A `batch-manager.js` elején található `CONFIG` objektumban módosíthatod:
+    - Start with a single `batch-manager.js` on a small target and observe timings.
+    - Use `analyze-targets.js` to pick good targets early in the game.
+    - Let `server-buyer.js` manage purchased servers to free up manual management.
 
-```javascript
-const CONFIG = {
-    batchDelay: 200,        // Késleltetés műveletek között (ms)
-    cycleDelay: 50,         // Késleltetés batch-ek között (ms)
-    hackPercent: 0.25,      // Mennyi pénzt lopunk (25%)
-    // ...
-};
-```
+    ---
 
-### Ajánlott hackPercent értékek:
-- **Kezdő (kis RAM)**: 0.10 - 0.15
-- **Közepes**: 0.20 - 0.30
-- **Haladó (sok RAM)**: 0.40 - 0.50
-
-## 🔧 Működési Elv
-
-### HWGW Batch Stratégia
-
-Minden "batch" 4 műveletből áll, amelyek precízen időzítve érkeznek be:
-
-1. **H**ack - Pénzt lop a szerverről
-2. **W**eaken1 - Visszaállítja a hack okozta security növekedést
-3. **G**row - Visszanöveszti az ellopott pénzt
-4. **W**eaken2 - Visszaállítja a grow okozta security növekedést
-
-```
+    Maintainer: Claude AI (adapted by repository owner)
+    Version: 1.1 — improved script catalog and usage notes
+    ```
 Idő -->
-|----Hack----|
-|------Weaken1------|
-|----Grow----|
-|------Weaken2------|
-              ^ ^ ^ ^
-              H W G W  (beérkezési sorrend)
-```
-
-### Előkészítés (Prep)
-
-A batch manager először "előkészíti" a célszervert:
-- Security → minimum szintre csökkenti
-- Money → maximum szintre növeli
-
-Ez biztosítja a maximális hatékonyságot.
-
-## 📊 Monitorozás
-
-A batch manager automatikusan megnyit egy log ablakot részletes statisztikákkal:
-- Célpont információk
-- Pénz/másodperc
-- Futtatott batch-ek száma
-- Szerver állapot
-
-Manuális megnyitás:
-```
-tail batch-manager.js
-```
-
-## 🎯 Célpont Kiválasztási Algoritmus
-
-A rendszer a következő szempontokat veszi figyelembe:
-- Maximum pénz
-- Hack esély
-- Növekedési ráta
-- Hack idő
-- Minimum security
-
-A legjobb célpont általában:
-- Közepes-magas max pénz
-- Alacsony security
-- Megfelelő hack szint
-
-## 💡 Tippek
-
-1. **Korai játék**: Használj `n00dles` vagy `foodnstuff` célpontot
-2. **Közép játék**: `joesguns`, `harakiri-sushi`, `hong-fang-tea`
-3. **Késői játék**: `ecorp`, `megacorp` (Formulas API-val)
-
-4. **RAM bővítés**: A server-buyer automatikusan frissít, de manuálisan is vásárolhatsz nagyobb szervereket
-
-5. **Több célpont**: Futtathatsz több batch-manager-t különböző célpontokra
-
-## ⚠️ Hibakezelés
-
-Ha a rendszer leáll vagy hibázik:
-1. `kill batch-manager.js` - Megállítja a batch managert
-2. `killall` - Megállít minden scriptet
-3. `run startup.js` - Újraindítja a rendszert
-
-## 🔄 Frissítések
-
-A scriptek automatikusan:
-- Rootolják az új szervereket
-- Telepítik a worker scripteket
-- Adaptálódnak a változó körülményekhez
-
----
-
-Készítette: Claude AI
-Verzió: 1.0.0
